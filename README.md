@@ -7,6 +7,7 @@ Search by title/tags. See stats, progress, and recommendations. Clean, responsiv
 
 - React + TypeScript + Vite
 - ESLint configured for TypeScript/React
+- Prettier for code formating
 
 ## Local development
 
