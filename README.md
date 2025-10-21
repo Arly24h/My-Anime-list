@@ -1,6 +1,7 @@
 # My-Anime-list
 
-Track, rate, and review your anime. Create watchlists, log episodes, and mark favorites. Search by title/tags. See stats, progress, and recommendations. Clean, responsive UI.
+Track, rate, and review your anime. Create watchlists, log episodes, and mark favorites.
+Search by title/tags. See stats, progress, and recommendations. Clean, responsive UI.
 
 ## Tech stack
 
