@@ -1,0 +1,114 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: rgba(20, 20, 20, 0.8);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.nav__inner {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.nav__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+.nav__title {
+  font-size: 1rem;
+}
+
+.nav__links,
+.nav__user {
+  display: inline-flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.nav__links a,
+.nav__user a {
+  color: inherit;
+  opacity: 0.9;
+}
+.nav__links a:hover,
+.nav__user a:hover {
+  opacity: 1;
+}
+
+.nav__search {
+  display: inline-flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.nav__search input[type='search'] {
+  width: min(36vw, 420px);
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.06);
+  color: inherit;
+}
+.nav__search button {
+  padding: 0.5rem 0.75rem;
+}
+
+.nav__burger {
+  display: none;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+.nav__burger span {
+  display: block;
+  height: 2px;
+  background: currentColor;
+  margin: 5px 0;
+}
+
+@media (max-width: 900px) {
+  .nav__inner {
+    grid-template-columns: auto auto 1fr;
+  }
+  .nav__links,
+  .nav__user {
+    display: none;
+  }
+  .nav__links.is-open,
+  .nav__user.is-open {
+    display: flex;
+    grid-column: 1 / -1;
+    flex-wrap: wrap;
+    padding: 0.5rem 0 0.25rem;
+  }
+  .nav__burger {
+    display: inline-block;
+    justify-self: end;
+  }
+  .nav__search input[type='search'] {
+    width: min(50vw, 360px);
+  }
+}
+
+@media (prefers-color-scheme: light) {
+  .nav {
+    background: rgba(255, 255, 255, 0.75);
+    border-bottom-color: rgba(0, 0, 0, 0.08);
+  }
+  .nav__search input[type='search'] {
+    background: rgba(0, 0, 0, 0.04);
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+}
