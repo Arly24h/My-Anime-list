@@ -115,6 +115,11 @@
     font-size: 1rem;
     line-height: 1.2;
   }
+  .nav__links.is-open a,
+  .nav__user.is-open a {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
   .nav__links,
   .nav__user {
     display: none;
