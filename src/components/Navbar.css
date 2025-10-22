@@ -3,9 +3,10 @@
   top: 0;
   z-index: 50;
   width: 100%;
-  background: rgba(20, 20, 20, 0.8);
+  background: rgb(20 20 20 / 80%);
   backdrop-filter: blur(6px);
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
 }
 
 .nav__inner {
@@ -24,8 +25,9 @@
   gap: 0.5rem;
   font-weight: 700;
 }
+
 .nav__title {
-  font-size: 1rem;
+  font-size: 1.05em;
 }
 
 .nav__links,
@@ -36,15 +38,16 @@
   flex-wrap: wrap;
 }
 
-/* Let links and search grow to use available space; keep brand/user compact */
 .nav__brand {
   flex: 0 0 auto;
   white-space: nowrap;
 }
+
 .nav__links {
   flex: 1 1 280px;
   min-width: 200px;
 }
+
 .nav__search {
   display: flex;
   gap: 0.5rem;
@@ -52,6 +55,7 @@
   flex: 1 1 340px;
   min-width: 240px;
 }
+
 .nav__user {
   flex: 0 0 auto;
 }
@@ -60,7 +64,9 @@
 .nav__user a {
   color: inherit;
   opacity: 0.9;
+  font-size: 1em;
 }
+
 .nav__links a:hover,
 .nav__user a:hover {
   opacity: 1;
@@ -73,9 +79,10 @@
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   border: 1px solid #8e93fd;
-  background: rgba(255, 255, 255, 0.06);
+  background: rgb(255 255 255 / 6%);
   color: inherit;
 }
+
 .nav__search button {
   padding: 0.5rem 0.75rem;
   flex: 0 0 auto;
@@ -90,14 +97,24 @@
   border: 1px solid transparent;
   background: transparent;
 }
+
 .nav__burger span {
   display: block;
   height: 2px;
-  background: currentColor;
+  background: currentcolor;
   margin: 5px 0;
 }
 
-@media (max-width: 1300px) {
+/* Responsive adjustments for smaller screens */
+@media (width <= 1345px) {
+  .nav__title {
+    font-size: 1.1rem;
+  }
+  .nav__search input[type='search'],
+  .nav__search button {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
   .nav__links,
   .nav__user {
     display: none;
@@ -119,11 +136,11 @@
 
 @media (prefers-color-scheme: light) {
   .nav {
-    background: rgba(255, 255, 255, 0.75);
-    border-bottom-color: rgba(0, 0, 0, 0.08);
+    background: rgb(255 255 255 / 75%);
+    border-bottom-color: rgb(0 0 0 / 8%);
   }
   .nav__search input[type='search'] {
-    background: rgba(0, 0, 0, 0.04);
-    border-color: rgba(0, 0, 0, 0.12);
+    background: rgb(0 0 0 / 4%);
+    border-color: rgb(0 0 0 / 12%);
   }
 }
