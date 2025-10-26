@@ -1,0 +1,134 @@
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  width: 100%;
+  background: rgb(20 20 20 / 80%);
+  backdrop-filter: blur(6px);
+  border-bottom: 1px solid rgb(255 255 255 / 8%);
+  font-size: clamp(0.95rem, 0.9rem + 0.2vw, 1.1rem);
+}
+
+.nav__inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0.5rem 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.nav__brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 700;
+}
+
+.nav__title {
+  font-size: 1.5rem;
+}
+
+.nav__links,
+.nav__user {
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.nav__brand {
+  flex: 0 0 auto;
+  white-space: nowrap;
+}
+
+.nav__links {
+  flex: 1 1 280px;
+  min-width: 200px;
+}
+
+.nav__search {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex: 1 1 340px;
+  min-width: 240px;
+}
+
+.nav__user {
+  flex: 0 0 auto;
+}
+
+.nav__links a,
+.nav__user a {
+  color: inherit;
+}
+
+.nav__links a:hover,
+.nav__user a:hover {
+  color: #8e93fd;
+}
+
+.nav__search input[type='search'] {
+  width: 100%;
+  flex: 1 1 auto;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #8e93fd;
+  background: rgb(255 255 255 / 6%);
+  color: inherit;
+}
+
+.nav__search button {
+  padding: 0.5rem 0.75rem;
+  flex: 0 0 auto;
+}
+
+.nav__burger {
+  display: none;
+  width: 36px;
+  height: 36px;
+  padding: 6px;
+  border-radius: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+}
+
+.nav__burger span {
+  display: block;
+  height: 2px;
+  background: currentcolor;
+  margin: 5px 0;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (width <= 1420px) {
+  .nav__search input[type='search'],
+  .nav__search button {
+    font-size: 1rem;
+    line-height: 1.2;
+  }
+  .nav__links.is-open a,
+  .nav__user.is-open a {
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  .nav__links,
+  .nav__user {
+    display: none;
+  }
+  .nav__links.is-open,
+  .nav__user.is-open {
+    display: flex;
+    flex-basis: 100%;
+    padding: 0.5rem 0 0.25rem;
+  }
+  .nav__burger {
+    display: inline-block;
+    margin-left: auto;
+  }
+  .nav__search {
+    flex-basis: 100%;
+  }
+}

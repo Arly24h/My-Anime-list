@@ -1,0 +1,124 @@
+.footer {
+  margin-top: 2rem;
+  width: 100%;
+  background: rgb(20 20 20 / 85%);
+  backdrop-filter: blur(6px);
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+
+.footer__inner {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 2rem 1rem 1rem;
+  display: flex;
+  align-items: flex-start;
+  gap: clamp(1rem, 2vw, 2rem) clamp(0.75rem, 1.5vw, 1.5rem);
+  flex-wrap: wrap;
+}
+
+.footer__brand {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  min-width: 220px;
+  flex: 1 1 320px;
+}
+
+.footer__title {
+  font-weight: 700;
+  font-size: 1.5rem;
+}
+
+.footer__tag {
+  margin-top: 0.5rem;
+}
+
+.footer__col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  min-width: 150px;
+  flex: 1 1 180px;
+}
+
+.footer__col h3 {
+  margin: 0 0 0.7rem;
+  font-size: 1.25rem;
+}
+
+.footer__col a, .footer__meta a {
+  color: inherit;
+}
+
+.footer__meta {
+  max-width: 1440px;
+  margin: 0 auto;
+  padding: 0 1rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  opacity: 0.85;
+}
+
+.footer__meta a {
+  text-decoration: underline;
+}
+
+.footer__meta-copy .footer__owner {
+  margin-right: 0.5rem;
+}
+
+/* Responsive adjustments for smaller screens */
+@media (width <= 940px) {
+  .footer__inner {
+    justify-content: center;
+    gap: 0.5rem 0.75rem;
+  }
+  .footer__brand {
+    flex-basis: 100%;
+    min-width: 0;
+    align-items: center;
+    text-align: center;
+  }
+  .footer__col {
+    flex: 0 1 150px;
+    min-width: 150px;
+    align-items: center;
+    text-align: center;
+  }
+}
+
+@media (width <= 670px) {
+  .footer__meta-copy .footer__rights {
+    display: block;
+  }
+  .footer__meta-copy .footer__owner {
+    margin-right: 0;
+  }
+}
+
+@media (width <= 510px) {
+  .footer__inner {
+    padding: 1rem 0.75rem 0.5rem;
+    gap: 1rem 0.75rem;
+  }
+  .footer__brand {
+    align-items: center;
+    text-align: center;                                                   
+  }
+
+  .footer__col {
+    flex: 1 1 100%;
+    min-width: 0;
+    align-items: center;                    
+    text-align: center;
+    gap: 0.50rem;
+  }
+  .footer__col h3 {
+    margin: 0.5rem 0 0.25rem;
+  }
+  .footer__meta {
+    border-top-color: rgb(0 0 0 / 8%);
+  }
+}
