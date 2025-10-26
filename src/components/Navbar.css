@@ -27,7 +27,7 @@
 }
 
 .nav__title {
-  font-size: 1.05em;
+  font-size: 1.5rem;
 }
 
 .nav__links,
@@ -63,13 +63,10 @@
 .nav__links a,
 .nav__user a {
   color: inherit;
-  opacity: 0.9;
-  font-size: 1em;
 }
 
 .nav__links a:hover,
 .nav__user a:hover {
-  opacity: 1;
   color: #8e93fd;
 }
 
@@ -106,10 +103,7 @@
 }
 
 /* Responsive adjustments for smaller screens */
-@media (width <= 1345px) {
-  .nav__title {
-    font-size: 1.1rem;
-  }
+@media (width <= 1420px) {
   .nav__search input[type='search'],
   .nav__search button {
     font-size: 1rem;
@@ -136,16 +130,5 @@
   }
   .nav__search {
     flex-basis: 100%;
-  }
-}
-
-@media (prefers-color-scheme: light) {
-  .nav {
-    background: rgb(255 255 255 / 75%);
-    border-bottom-color: rgb(0 0 0 / 8%);
-  }
-  .nav__search input[type='search'] {
-    background: rgb(0 0 0 / 4%);
-    border-color: rgb(0 0 0 / 12%);
   }
 }

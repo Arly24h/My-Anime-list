@@ -6,7 +6,9 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer__inner">
         <div className="footer__brand">
-          <a href="#home" className="footer__title">My Anime List</a>
+          <a href="#home" className="footer__title">
+            My Anime List
+          </a>
           <p className="footer__tag">Track, discover, and enjoy anime.</p>
         </div>
 
@@ -36,9 +38,15 @@ export default function Footer() {
 
       <div className="footer__meta">
         <p>
-          Data via <a href="https://docs.anilist.co" target="_blank" rel="noreferrer">AniList API</a>
+          Data via{' '}
+          <a href="https://docs.anilist.co" target="_blank" rel="noreferrer">
+            AniList API
+          </a>
         </p>
-        <p>© {year} My Anime List. All rights reserved.</p>
+        <p className="footer__meta-copy">
+          <span className="footer__owner">© {year} My Anime List.</span>
+          <span className="footer__rights">All rights reserved.</span>
+        </p>
       </div>
     </footer>
   );
