@@ -158,6 +158,7 @@ function AnimeCard({ anime: a, rank }: { anime: Anime; rank: number }) {
   const title = a.title.english || a.title.romaji || a.title.native || 'Untitled';
   const img = a.coverImage?.large || a.coverImage?.medium || '';
   const [side, setSide] = useState<'right' | 'left'>('right');
+  const [active, setActive] = useState(false);
   const cardRef = useRef<HTMLLIElement | null>(null);
 
   function decideSide() {
@@ -172,8 +173,16 @@ function AnimeCard({ anime: a, rank }: { anime: Anime; rank: number }) {
     <li
       ref={cardRef}
       className={`card pos-${side}`}
-      onMouseEnter={decideSide}
-      onFocus={decideSide}
+      onMouseEnter={() => {
+        decideSide();
+        setActive(true);
+      }}
+      onMouseLeave={() => setActive(false)}
+      onFocus={() => {
+        decideSide();
+        setActive(true);
+      }}
+      onBlur={() => setActive(false)}
     >
       <a href={a.siteUrl || '#'} target="_blank" rel="noreferrer" className="card__link">
         <div className="card__media" style={{ backgroundColor: a.coverImage?.color || '#222' }}>
@@ -186,25 +195,27 @@ function AnimeCard({ anime: a, rank }: { anime: Anime; rank: number }) {
         {a.averageScore != null && (
           <span className="card__score badge">Score {a.averageScore}</span>
         )}
-        <div className={`card__popover side-${side}`} aria-hidden="true">
-          <div className="card__popover-inner">
-            {(a.title.native || a.title.romaji) && (
-              <p className="card__subtitle">{a.title.native || a.title.romaji}</p>
-            )}
-            <div className="card__hover-meta">
-              {a.popularity != null && <span className="chip">Pop {a.popularity}</span>}
-              {a.format && <span className="chip">{a.format}</span>}
-              {a.episodes != null && <span className="chip">{a.episodes} eps</span>}
-              {(a.season || a.seasonYear) && (
-                <span className="chip">
-                  {a.season ? a.season : ''}
-                  {a.season && a.seasonYear ? ' ' : ''}
-                  {a.seasonYear ? a.seasonYear : ''}
-                </span>
+        {active && (
+          <div className={`card__popover side-${side}`} aria-hidden="true">
+            <div className="card__popover-inner">
+              {(a.title.native || a.title.romaji) && (
+                <p className="card__subtitle">{a.title.native || a.title.romaji}</p>
               )}
+              <div className="card__hover-meta">
+                {a.popularity != null && <span className="chip">Pop {a.popularity}</span>}
+                {a.format && <span className="chip">{a.format}</span>}
+                {a.episodes != null && <span className="chip">{a.episodes} eps</span>}
+                {(a.season || a.seasonYear) && (
+                  <span className="chip">
+                    {a.season ? a.season : ''}
+                    {a.season && a.seasonYear ? ' ' : ''}
+                    {a.seasonYear ? a.seasonYear : ''}
+                  </span>
+                )}
+              </div>
             </div>
           </div>
-        </div>
+        )}
       </a>
     </li>
   );

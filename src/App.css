@@ -33,12 +33,13 @@
 	display: flex;
 	flex-wrap: wrap;
 	gap: 12px;
-	align-content: flex-start;
+	place-content: flex-start center;
 }
 
 .top-list__grid > .card {
-	flex: 1 1 170px;
-	min-width: 170px;
+	/* unify card width so Trending and Top 100 have the same columns per row */
+	flex: 0 0 180px;
+	min-width: 180px;
 }
 
 .card {
@@ -193,6 +194,43 @@
 	padding: 2px 6px;
 	border-radius: 999px;
 	font-size: 0.72rem;
+}
+
+/* Section actions (e.g., Show more) */
+.top-list__actions {
+	display: flex;
+	justify-content: flex-start;
+	margin-top: 8px;
+}
+
+.btn-link {
+	appearance: none;
+	background: none;
+	border: none;
+	color: #7fb3ff;
+	padding: 4px 0;
+	cursor: pointer;
+	font: inherit;
+}
+
+.btn-link:hover { text-decoration: underline; }
+
+/* Align Trending actions to the right side */
+.trending-list .top-list__actions {
+	justify-content: flex-end;
+}
+
+.trending-list .top-list__grid {
+	justify-content: center;
+}
+
+.trending-list .card__title {
+	display: -webkit-box;
+	line-clamp: 2;
+	-webkit-line-clamp: 2;
+	-webkit-box-orient: vertical;
+	overflow: hidden;
+	min-height: 2.5em;
 }
 
 /* Responsive adjustments for smaller screens */
