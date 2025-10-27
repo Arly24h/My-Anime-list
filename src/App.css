@@ -37,7 +37,6 @@
 }
 
 .top-list__grid > .card {
-	/* unify card width so Trending and Top 100 have the same columns per row */
 	flex: 0 0 180px;
 	min-width: 180px;
 }
@@ -124,7 +123,6 @@
 	color: #7a7a7a;
 }
 
-/* Skeletons */
 .skeleton .card {
 	background: linear-gradient(90deg, #1a1a1a 25%, #202020 37%, #1a1a1a 63%);
 	background-size: 400% 100%;
@@ -141,7 +139,6 @@
 	}
 }
 
-/* Popover for extra info */
 .card__popover {
 	position: absolute;
 	top: 8px;
@@ -196,7 +193,6 @@
 	font-size: 0.72rem;
 }
 
-/* Section actions (e.g., Show more) */
 .top-list__actions {
 	display: flex;
 	justify-content: flex-start;
@@ -215,7 +211,6 @@
 
 .btn-link:hover { text-decoration: underline; }
 
-/* Align Trending actions to the right side */
 .trending-list .top-list__actions {
 	justify-content: flex-end;
 }

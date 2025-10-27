@@ -152,7 +152,7 @@ export default function TopAnimeList() {
   );
 }
 
-const POPOVER_WIDTH = 240; // px, used to decide left/right placement
+const POPOVER_WIDTH = 240;
 
 function AnimeCard({ anime: a, rank }: { anime: Anime; rank: number }) {
   const title = a.title.english || a.title.romaji || a.title.native || 'Untitled';
