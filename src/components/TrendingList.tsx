@@ -44,8 +44,8 @@ export default function TrendingList() {
 
   const [expanded, setExpanded] = useState(false);
   const gridRef = useRef<HTMLElement | null>(null);
-  const setGridRef = (el: HTMLOListElement | HTMLUListElement | null) => {
-    gridRef.current = el as unknown as HTMLElement | null;
+  const setGridRef = (element: HTMLOListElement | HTMLUListElement | null) => {
+    gridRef.current = element as unknown as HTMLElement | null;
   };
   const [actionsRightGap, setActionsRightGap] = useState(0);
 
@@ -65,9 +65,10 @@ export default function TrendingList() {
           { signal: controller.signal }
         );
         if (!cancelled) setItems(data.Page.media ?? []);
-      } catch (e: unknown) {
-        if (isAbortError(e)) return;
-        if (!cancelled) setError(getErrorMessage(e) || 'Failed to load trending anime.');
+      } catch (error: unknown) {
+        if (isAbortError(error)) return;
+        if (!cancelled)
+          setError(getErrorMessage(error) || 'Failed to load trending anime.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -81,22 +82,22 @@ export default function TrendingList() {
 
   useEffect(() => {
     if (loading || error) return;
-    const el = gridRef.current;
-    if (!el) return;
+    const gridElement = gridRef.current;
+    if (!gridElement) return;
 
     const measure = () => {
-      const children = Array.from(el.children).filter((n) =>
-        n.classList.contains('card')
+      const children = Array.from(gridElement.children).filter((node) =>
+        node.classList.contains('card')
       ) as HTMLElement[];
       if (!children.length) return;
       const limit = expanded ? 20 : 10;
       const visibleCount = Math.min(children.length, limit);
       const visible = children.slice(0, visibleCount);
-      const gridRect = el.getBoundingClientRect();
+      const gridRect = gridElement.getBoundingClientRect();
       let maxRight = 0;
-      for (const c of visible) {
-        const r = c.getBoundingClientRect();
-        if (r.right > maxRight) maxRight = r.right;
+      for (const childEl of visible) {
+        const rect = childEl.getBoundingClientRect();
+        if (rect.right > maxRight) maxRight = rect.right;
       }
       const leftover = Math.max(0, Math.round(gridRect.right - maxRight));
       setActionsRightGap(leftover);
@@ -128,8 +129,8 @@ export default function TrendingList() {
 
         {loading ? (
           <ul ref={setGridRef} className="top-list__grid skeleton">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <li key={i} className="card" />
+            {Array.from({ length: 20 }).map((_, index) => (
+              <li key={index} className="card" />
             ))}
           </ul>
         ) : (
@@ -137,16 +138,17 @@ export default function TrendingList() {
             {(expanded
               ? items.slice(0, Math.min(20, items.length))
               : items.slice(0, Math.min(10, items.length))
-            ).map((a, idx) => {
-              const title = a.title.english || a.title.romaji || a.title.native || 'Untitled';
-              const img = a.coverImage?.large || a.coverImage?.medium || '';
-              const rank = idx + 1;
+            ).map((anime, index) => {
+              const title =
+                anime.title.english || anime.title.romaji || anime.title.native || 'Untitled';
+              const img = anime.coverImage?.large || anime.coverImage?.medium || '';
+              const rank = index + 1;
               return (
-                <li key={a.id} className="card">
-                  <a href={`#anime/${a.id}`} className="card__link">
+                <li key={anime.id} className="card">
+                  <a href={`#anime/${anime.id}`} className="card__link">
                     <div
                       className="card__media"
-                      style={{ backgroundColor: a.coverImage?.color || '#222' }}
+                      style={{ backgroundColor: anime.coverImage?.color || '#222' }}
                     >
                       {img && <img src={img} alt="" loading="lazy" />}
                       <span className="card__rank">#{rank}</span>
@@ -154,8 +156,8 @@ export default function TrendingList() {
                     <div className="card__body">
                       <h3 className="card__title">{title}</h3>
                     </div>
-                    {a.averageScore != null && (
-                      <span className="card__score badge">Score {a.averageScore}</span>
+                    {anime.averageScore != null && (
+                      <span className="card__score badge">Score {anime.averageScore}</span>
                     )}
                   </a>
                 </li>
@@ -170,7 +172,7 @@ export default function TrendingList() {
               type="button"
               className="btn-link"
               aria-expanded={expanded}
-              onClick={() => setExpanded((v) => !v)}
+              onClick={() => setExpanded((isExpanded) => !isExpanded)}
             >
               {expanded ? 'Show less' : 'Show more'}
             </button>

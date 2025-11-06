@@ -24,11 +24,11 @@ export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
   const [query, setQuery] = useState('');
 
-  function onSearchSubmit(e: React.FormEvent) {
-    e.preventDefault();
-    const q = query.trim();
-    if (!q) return;
-    window.location.hash = `search?q=${encodeURIComponent(q)}`;
+  function onSearchSubmit(event: React.FormEvent) {
+    event.preventDefault();
+    const searchQuery = query.trim();
+    if (!searchQuery) return;
+    window.location.hash = `search?q=${encodeURIComponent(searchQuery)}`;
     setMenuOpen(false);
   }
 
@@ -43,7 +43,7 @@ export default function Navbar() {
           className="nav__burger"
           aria-label="Toggle menu"
           aria-expanded={menuOpen}
-          onClick={() => setMenuOpen((v) => !v)}
+          onClick={() => setMenuOpen((isOpen) => !isOpen)}
         >
           <span />
           <span />
@@ -51,9 +51,9 @@ export default function Navbar() {
         </button>
 
         <nav className={`nav__links ${menuOpen ? 'is-open' : ''}`} aria-label="Primary">
-          {primaryLinks.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}>
-              {l.label}
+          {primaryLinks.map((link) => (
+            <a key={link.label} href={link.href} onClick={() => setMenuOpen(false)}>
+              {link.label}
             </a>
           ))}
         </nav>
@@ -63,16 +63,16 @@ export default function Navbar() {
             type="search"
             placeholder="Search anime, tags, users..."
             value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            onChange={(event) => setQuery(event.target.value)}
             aria-label="Search"
           />
           <button type="submit">Search</button>
         </form>
 
         <nav className={`nav__user ${menuOpen ? 'is-open' : ''}`} aria-label="User">
-          {userLinks.map((l) => (
-            <a key={l.label} href={l.href} onClick={() => setMenuOpen(false)}>
-              {l.label}
+          {userLinks.map((link) => (
+            <a key={link.label} href={link.href} onClick={() => setMenuOpen(false)}>
+              {link.label}
             </a>
           ))}
           <a href="#signup" className="nav__signup" onClick={() => setMenuOpen(false)}>

@@ -4,33 +4,35 @@ export const ANILIST_ENDPOINT = metaEnv?.VITE_ANILIST_URL || 'https://graphql.an
 export type GraphQLError = { message: string };
 export type GraphQLResponse<T> = { data?: T; errors?: GraphQLError[] };
 
-export function getErrorMessage(e: unknown): string {
-  if (typeof e === 'string') return e;
-  if (e && typeof e === 'object' && 'message' in e) {
-    const m = (e as { message?: unknown }).message;
-    if (typeof m === 'string') return m;
+export function getErrorMessage(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error && typeof error === 'object' && 'message' in error) {
+    const messageMaybe = (error as { message?: unknown }).message;
+    if (typeof messageMaybe === 'string') return messageMaybe;
   }
   try {
-    return JSON.stringify(e);
+    return JSON.stringify(error);
   } catch {
     return 'Unknown error';
   }
 }
 
-export function isAbortError(e: unknown): boolean {
-  if (!e || typeof e !== 'object') return false;
-  const anyE = e as { name?: string; message?: string };
-  return anyE.name === 'AbortError' || /aborted/i.test(anyE.message || '');
+export function isAbortError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const errorLikeObject = error as { name?: string; message?: string };
+  return (
+    errorLikeObject.name === 'AbortError' || /aborted/i.test(errorLikeObject.message || '')
+  );
 }
 
-function sleep(ms: number, signal?: AbortSignal) {
+function sleep(milliseconds: number, signal?: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
-    const t = setTimeout(() => resolve(), ms);
+    const timeoutId = setTimeout(() => resolve(), milliseconds);
     if (signal) {
       const onAbort = () => {
-        clearTimeout(t);
-        const err = new DOMException('The operation was aborted.', 'AbortError');
-        reject(err);
+        clearTimeout(timeoutId);
+        const abortError = new DOMException('The operation was aborted.', 'AbortError');
+        reject(abortError);
       };
       if (signal.aborted) onAbort();
       signal.addEventListener('abort', onAbort, { once: true });
@@ -48,36 +50,41 @@ export async function fetchGraphQL<T>(
   let attempt = 0;
   while (true) {
     try {
-      const res = await fetch(ANILIST_ENDPOINT, {
+      const response = await fetch(ANILIST_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({ query, variables }),
         signal,
       });
-      if (!res.ok) {
-        const text = await res.text();
-        const retriable = res.status === 429 || res.status === 502 || res.status === 503 || res.status === 504;
+      if (!response.ok) {
+        const text = await response.text();
+        const retriable =
+          response.status === 429 ||
+          response.status === 502 ||
+          response.status === 503 ||
+          response.status === 504;
         if (retriable && attempt < retries) {
           attempt += 1;
           await sleep(300 * attempt, signal);
           continue;
         }
         throw new Error(
-          `AniList request failed: ${res.status} ${res.statusText} — ${text.substring(0, 200)}`
+          `AniList request failed: ${response.status} ${response.statusText} — ${text.substring(0, 200)}`
         );
       }
-      const json = (await res.json()) as GraphQLResponse<T>;
-      if (json.errors?.length) throw new Error(json.errors.map((e) => e.message).join('; '));
-      if (!json.data) throw new Error('No data returned');
-      return json.data;
-    } catch (e) {
-      if (isAbortError(e)) throw e;
+      const jsonResponse = (await response.json()) as GraphQLResponse<T>;
+      if (jsonResponse.errors?.length)
+        throw new Error(jsonResponse.errors.map((err) => err.message).join('; '));
+      if (!jsonResponse.data) throw new Error('No data returned');
+      return jsonResponse.data;
+    } catch (error) {
+      if (isAbortError(error)) throw error;
       if (attempt < (init?.retries ?? 2)) {
         attempt += 1;
         await sleep(300 * attempt, signal);
         continue;
       }
-      throw e;
+      throw error;
     }
   }
 }
