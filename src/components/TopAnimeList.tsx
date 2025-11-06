@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fetchGraphQL, getErrorMessage, isAbortError } from '../lib/anilist';
 
 type Title = {
   romaji?: string | null;
@@ -38,15 +39,6 @@ type AniListPage = {
   media: Anime[];
 };
 
-type AniListResponse = {
-  data?: {
-    Page: AniListPage;
-  };
-  errors?: Array<{ message: string }>;
-};
-
-const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
-
 const QUERY = `
   query TopAnime($page: Int!, $perPage: Int!, $sort: [MediaSort]) {
     Page(page: $page, perPage: $perPage) {
@@ -67,24 +59,18 @@ const QUERY = `
   }
 `;
 
-async function fetchPage(page: number, perPage = 50, sort: string[] = ['SCORE_DESC']): Promise<Anime[]> {
-  const res = await fetch(ANILIST_ENDPOINT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-    body: JSON.stringify({ query: QUERY, variables: { page, perPage, sort } }),
-  });
-
-  if (!res.ok) {
-    const text = await res.text();
-    throw new Error(`AniList request failed: ${res.status} ${res.statusText} — ${text.substring(0, 200)}`);
-  }
-
-  const json = (await res.json()) as AniListResponse;
-  if (json.errors && json.errors.length) {
-    throw new Error(json.errors.map((e) => e.message).join('; '));
-  }
-
-  return json.data?.Page.media ?? [];
+async function fetchPage(
+  page: number,
+  perPage = 50,
+  sort: string[] = ['SCORE_DESC'],
+  signal?: AbortSignal
+): Promise<Anime[]> {
+  const data = await fetchGraphQL<{ Page: AniListPage }>(
+    QUERY,
+    { page, perPage, sort },
+    { signal }
+  );
+  return data.Page.media ?? [];
 }
 
 export default function TopAnimeList() {
@@ -94,17 +80,22 @@ export default function TopAnimeList() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
 
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const [p1, p2] = await Promise.all([fetchPage(1), fetchPage(2)]);
+        const [p1, p2] = await Promise.all([
+          fetchPage(1, 50, ['SCORE_DESC'], controller.signal),
+          fetchPage(2, 50, ['SCORE_DESC'], controller.signal),
+        ]);
         if (!cancelled) {
           setItems([...p1, ...p2]);
         }
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Failed to load top anime.');
+      } catch (e: unknown) {
+        if (isAbortError(e)) return;
+        if (!cancelled) setError(getErrorMessage(e) || 'Failed to load top anime.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -113,6 +104,7 @@ export default function TopAnimeList() {
     load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, []);
 
@@ -184,7 +176,7 @@ function AnimeCard({ anime: a, rank }: { anime: Anime; rank: number }) {
       }}
       onBlur={() => setActive(false)}
     >
-      <a href={a.siteUrl || '#'} target="_blank" rel="noreferrer" className="card__link">
+      <a href={`#anime/${a.id}`} className="card__link">
         <div className="card__media" style={{ backgroundColor: a.coverImage?.color || '#222' }}>
           {img && <img src={img} alt="" loading="lazy" />}
           <span className="card__rank">#{rank}</span>

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { fetchGraphQL, getErrorMessage, isAbortError } from '../lib/anilist';
 
 type Title = {
   romaji?: string | null;
@@ -21,17 +22,6 @@ type Anime = {
   coverImage?: CoverImage | null;
 };
 
-type AniListResponse = {
-  data?: {
-    Page: {
-      media: Anime[];
-    };
-  };
-  errors?: Array<{ message: string }>;
-};
-
-const ANILIST_ENDPOINT = 'https://graphql.anilist.co';
-
 const QUERY = `
   query TrendingAnime($perPage: Int!, $sort: [MediaSort]) {
     Page(page: 1, perPage: $perPage) {
@@ -51,6 +41,7 @@ export default function TrendingList() {
   const [items, setItems] = useState<Anime[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
   const [expanded, setExpanded] = useState(false);
   const gridRef = useRef<HTMLElement | null>(null);
   const setGridRef = (el: HTMLOListElement | HTMLUListElement | null) => {
@@ -60,21 +51,23 @@ export default function TrendingList() {
 
   useEffect(() => {
     let cancelled = false;
+    const controller = new AbortController();
     async function load() {
       setLoading(true);
       setError(null);
       try {
-        const res = await fetch(ANILIST_ENDPOINT, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({ query: QUERY, variables: { perPage: 20, sort: ['TRENDING_DESC'] } }),
-        });
-        if (!res.ok) throw new Error(await res.text());
-        const json = (await res.json()) as AniListResponse;
-        if (json.errors?.length) throw new Error(json.errors.map((e) => e.message).join('; '));
-        if (!cancelled) setItems(json.data?.Page.media ?? []);
-      } catch (e: any) {
-        if (!cancelled) setError(e?.message || 'Failed to load trending anime.');
+        const data = await fetchGraphQL<{ Page: { media: Anime[] } }>(
+          QUERY,
+          {
+            perPage: 20,
+            sort: ['TRENDING_DESC'],
+          },
+          { signal: controller.signal }
+        );
+        if (!cancelled) setItems(data.Page.media ?? []);
+      } catch (e: unknown) {
+        if (isAbortError(e)) return;
+        if (!cancelled) setError(getErrorMessage(e) || 'Failed to load trending anime.');
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -82,6 +75,7 @@ export default function TrendingList() {
     load();
     return () => {
       cancelled = true;
+      controller.abort();
     };
   }, []);
 
@@ -91,7 +85,9 @@ export default function TrendingList() {
     if (!el) return;
 
     const measure = () => {
-      const children = Array.from(el.children).filter((n) => n.classList.contains('card')) as HTMLElement[];
+      const children = Array.from(el.children).filter((n) =>
+        n.classList.contains('card')
+      ) as HTMLElement[];
       if (!children.length) return;
       const limit = expanded ? 20 : 10;
       const visibleCount = Math.min(children.length, limit);
@@ -125,7 +121,9 @@ export default function TrendingList() {
         <p className="top-list__subtitle">{subtitle}</p>
 
         {error && (
-          <div className="top-list__error" role="alert">{error}</div>
+          <div className="top-list__error" role="alert">
+            {error}
+          </div>
         )}
 
         {loading ? (
@@ -136,14 +134,20 @@ export default function TrendingList() {
           </ul>
         ) : (
           <ol ref={setGridRef} className="top-list__grid">
-            {(expanded ? items.slice(0, Math.min(20, items.length)) : items.slice(0, Math.min(10, items.length))).map((a, idx) => {
+            {(expanded
+              ? items.slice(0, Math.min(20, items.length))
+              : items.slice(0, Math.min(10, items.length))
+            ).map((a, idx) => {
               const title = a.title.english || a.title.romaji || a.title.native || 'Untitled';
               const img = a.coverImage?.large || a.coverImage?.medium || '';
               const rank = idx + 1;
               return (
                 <li key={a.id} className="card">
-                  <a href={a.siteUrl || '#'} target="_blank" rel="noreferrer" className="card__link">
-                    <div className="card__media" style={{ backgroundColor: a.coverImage?.color || '#222' }}>
+                  <a href={`#anime/${a.id}`} className="card__link">
+                    <div
+                      className="card__media"
+                      style={{ backgroundColor: a.coverImage?.color || '#222' }}
+                    >
                       {img && <img src={img} alt="" loading="lazy" />}
                       <span className="card__rank">#{rank}</span>
                     </div>
