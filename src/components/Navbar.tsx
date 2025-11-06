@@ -6,7 +6,6 @@ type NavItem = {
   href: string;
 };
 
-// TODO: Add a "Top Anime" subsection under the Discover page later
 const primaryLinks: NavItem[] = [
   { label: 'Browse', href: '#browse' },
   { label: 'Discover', href: '#discover' },
@@ -27,10 +26,8 @@ export default function Navbar() {
 
   function onSearchSubmit(e: React.FormEvent) {
     e.preventDefault();
-    // TODO: wire up real search; for now just navigate to a placeholder route
     const q = query.trim();
     if (!q) return;
-    // Replace with router navigation when available
     window.location.hash = `search?q=${encodeURIComponent(q)}`;
     setMenuOpen(false);
   }
@@ -78,6 +75,9 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+          <a href="#signup" className="nav__signup" onClick={() => setMenuOpen(false)}>
+            Sign up
+          </a>
           <a href="#sign-in" className="nav__signin" onClick={() => setMenuOpen(false)}>
             Sign in
           </a>
