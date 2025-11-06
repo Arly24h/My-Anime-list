@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchGraphQL, getErrorMessage, isAbortError } from '../lib/anilist';
+import { fetchGraphQL } from '../lib/anilist';
+import { isAbortError, toUserMessage } from '../lib/errorhandling';
 import './AnimePage.css';
  
 
@@ -178,6 +179,7 @@ export default function AnimePage({ id }: { id: number }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllStreaming, setShowAllStreaming] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
   
 
   useEffect(() => {
@@ -191,7 +193,7 @@ export default function AnimePage({ id }: { id: number }) {
         if (!cancelled) setData(media);
       } catch (error: unknown) {
         if (isAbortError(error)) return;
-        if (!cancelled) setError(getErrorMessage(error) || 'Failed to load anime');
+        if (!cancelled) setError(toUserMessage(error));
       } finally {
         if (!cancelled) setLoading(false);
       }
@@ -203,7 +205,7 @@ export default function AnimePage({ id }: { id: number }) {
       window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [id]);
+  }, [id, reloadTick]);
 
   const title = useMemo(() => {
     if (!data) return '';
@@ -226,7 +228,17 @@ export default function AnimePage({ id }: { id: number }) {
       <section className="anime-page">
         <div className="container">
           <div className="top-list__error" role="alert">
-            {error}
+            {toUserMessage(error)}
+            <div className="top-list__actions" style={{ justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => setReloadTick((t) => t + 1)}
+                aria-label="Retry loading anime"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       </section>

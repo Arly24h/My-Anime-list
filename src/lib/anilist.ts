@@ -2,6 +2,9 @@ const metaEnv = (import.meta as unknown as { env?: Record<string, string | undef
 export const ANILIST_ENDPOINT = metaEnv?.VITE_ANILIST_URL || 'https://graphql.anilist.co';
 const IS_DEV = metaEnv?.MODE !== 'production';
 const DEBUG_LIMITER = metaEnv?.VITE_ANILIST_DEBUG === '1';
+export const ANILIST_TIMEOUT_MS = metaEnv?.VITE_ANILIST_TIMEOUT_MS
+  ? Number(metaEnv.VITE_ANILIST_TIMEOUT_MS)
+  : undefined;
 
 export type GraphQLError = { message: string };
 export type GraphQLResponse<T> = { data?: T; errors?: GraphQLError[] };
@@ -17,7 +20,6 @@ function acquire(signal?: AbortSignal): Promise<void> | void {
   if (activeRequests < MAX_CONCURRENCY) {
     activeRequests += 1;
     if (IS_DEV && DEBUG_LIMITER) {
-      // eslint-disable-next-line no-console
       console.log('[AniListLimiter] acquire immediate', { activeRequests, queued: waitQueue.length });
     }
     return;
@@ -31,7 +33,6 @@ function acquire(signal?: AbortSignal): Promise<void> | void {
       activeRequests += 1;
       cleanup();
       if (IS_DEV && DEBUG_LIMITER) {
-        // eslint-disable-next-line no-console
         console.log('[AniListLimiter] acquire from queue', { activeRequests, queued: waitQueue.length });
       }
       resolve();
@@ -56,31 +57,12 @@ function release() {
     if (next) next();
   }
   if (IS_DEV && DEBUG_LIMITER) {
-    // eslint-disable-next-line no-console
     console.log('[AniListLimiter] release', { activeRequests, queued: waitQueue.length });
   }
 }
 
-export function getErrorMessage(error: unknown): string {
-  if (typeof error === 'string') return error;
-  if (error && typeof error === 'object' && 'message' in error) {
-    const messageMaybe = (error as { message?: unknown }).message;
-    if (typeof messageMaybe === 'string') return messageMaybe;
-  }
-  try {
-    return JSON.stringify(error);
-  } catch {
-    return 'Unknown error';
-  }
-}
-
-export function isAbortError(error: unknown): boolean {
-  if (!error || typeof error !== 'object') return false;
-  const errorLikeObject = error as { name?: string; message?: string };
-  return (
-    errorLikeObject.name === 'AbortError' || /aborted/i.test(errorLikeObject.message || '')
-  );
-}
+import { getErrorMessage, isAbortError, toUserMessage } from './errorhandling';
+export { getErrorMessage, isAbortError, toUserMessage };
 
 function sleep(milliseconds: number, signal?: AbortSignal) {
   return new Promise<void>((resolve, reject) => {
@@ -116,17 +98,42 @@ function backoffDelayMs(attempt: number): number {
   return Math.max(200, Math.min(5000, Math.floor(delay)));
 }
 
+type FetchOptions = { signal?: AbortSignal; retries?: number; timeoutMs?: number };
+
+function createTimeoutSignal(parent: AbortSignal | undefined, timeoutMs: number) {
+  const controller = new AbortController();
+  let timedOut = false;
+  const timer = setTimeout(() => {
+    timedOut = true;
+    controller.abort();
+  }, timeoutMs);
+  const onAbort = () => controller.abort();
+  if (parent) parent.addEventListener('abort', onAbort, { once: true });
+  const cleanup = () => {
+    clearTimeout(timer);
+    if (parent) parent.removeEventListener('abort', onAbort);
+  };
+  return { signal: controller.signal, cleanup, timedOut: () => timedOut };
+}
+
 export async function fetchGraphQL<T>(
   query: string,
   variables?: Record<string, unknown>,
-  init?: { signal?: AbortSignal; retries?: number }
+  init?: FetchOptions
 ): Promise<T> {
-  const { signal, retries = 2 } = init || {};
+  const { signal: externalSignal, retries = 2, timeoutMs = ANILIST_TIMEOUT_MS ?? 10000 } = init || {};
+  const timeoutWrapper =
+    typeof timeoutMs === 'number' && timeoutMs > 0
+      ? createTimeoutSignal(externalSignal, timeoutMs)
+      : null;
+  const signal = timeoutWrapper ? timeoutWrapper.signal : externalSignal;
 
   let attempt = 0;
   while (true) {
+    let acquired = false;
     try {
       await acquire(signal);
+      acquired = true;
       const response = await fetch(ANILIST_ENDPOINT, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
@@ -167,7 +174,12 @@ export async function fetchGraphQL<T>(
       if (!jsonResponse.data) throw new Error('No data returned');
       return jsonResponse.data;
     } catch (error) {
-      if (isAbortError(error)) throw error;
+      if (isAbortError(error)) {
+        if (timeoutWrapper && timeoutWrapper.timedOut()) {
+          throw new Error('Request timed out');
+        }
+        throw error;
+      }
       if (attempt < (init?.retries ?? 2)) {
         attempt += 1;
         const delay = backoffDelayMs(attempt);
@@ -176,8 +188,8 @@ export async function fetchGraphQL<T>(
       }
       throw error;
     } finally {
-      // Only release if we actually acquired a slot
-      if (activeRequests > 0) release();
+      if (acquired) release();
+      if (timeoutWrapper) timeoutWrapper.cleanup();
     }
   }
 }

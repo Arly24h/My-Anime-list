@@ -1,10 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
+import { toUserMessage } from './errorhandling';
 
+export type PageData<T> = { items: T[]; hasNextPage: boolean };
 export type PageLoader<T> = (
   page: number,
   perPage: number,
   signal: AbortSignal
-) => Promise<T[]>;
+) => Promise<PageData<T>>;
 
 type Options = {
   initialPage?: number;
@@ -24,6 +26,7 @@ export function useIncrementalLoader<T>(
   const [page, setPage] = useState(initialPage);
   const [ended, setEnded] = useState(false);
   const inFlight = useRef(false);
+  const [resetTick, setResetTick] = useState(0);
 
   useEffect(() => {
     let cancelled = false;
@@ -34,14 +37,17 @@ export function useIncrementalLoader<T>(
       setEnded(false);
       inFlight.current = true;
       try {
-        const data = await loader(initialPage, perPage, controller.signal);
+        const pageData = await loader(initialPage, perPage, controller.signal);
         if (cancelled) return;
-        setItems(maxItems != null ? data.slice(0, maxItems) : data);
+        const initialItems = maxItems != null ? pageData.items.slice(0, maxItems) : pageData.items;
+        setItems(initialItems);
         setPage(initialPage + 1);
-        if (data.length < perPage) setEnded(true);
+        if (!pageData.hasNextPage || (maxItems != null && initialItems.length >= maxItems)) {
+          setEnded(true);
+        }
       } catch (e) {
         if (cancelled) return;
-        setError(e instanceof Error ? e.message : String(e));
+        setError(toUserMessage(e));
       } finally {
         inFlight.current = false;
         if (!cancelled) setLoadingInitial(false);
@@ -52,7 +58,7 @@ export function useIncrementalLoader<T>(
       cancelled = true;
       controller.abort();
     };
-  }, deps);
+  }, [...deps, resetTick]);
 
   async function showMore() {
     if (loadingMore || loadingInitial || inFlight.current) return;
@@ -63,14 +69,16 @@ export function useIncrementalLoader<T>(
     inFlight.current = true;
     const pageToLoad = page;
     try {
-      const data = await loader(pageToLoad, perPage, controller.signal);
-      let next = items.concat(data);
+      const pageData = await loader(pageToLoad, perPage, controller.signal);
+      let next = items.concat(pageData.items);
       if (maxItems != null) next = next.slice(0, maxItems);
       setItems(next);
       setPage(pageToLoad + 1);
-      if (data.length < perPage) setEnded(true);
+      if (!pageData.hasNextPage || (maxItems != null && next.length >= maxItems)) {
+        setEnded(true);
+      }
     } catch (e) {
-      setError(e instanceof Error ? e.message : String(e));
+      setError(toUserMessage(e));
     } finally {
       inFlight.current = false;
       setLoadingMore(false);
@@ -84,6 +92,7 @@ export function useIncrementalLoader<T>(
     setLoadingMore(false);
     setPage(initialPage);
     setEnded(false);
+    setResetTick((t) => t + 1);
   }
 
   const hasMore = !ended && (maxItems == null || items.length < maxItems);

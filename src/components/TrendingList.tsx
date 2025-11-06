@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { fetchGraphQL } from '../lib/anilist';
+import { toUserMessage } from '../lib/errorhandling';
 import { useIncrementalLoader } from '../lib/useIncrementalLoader';
 import { useRightAlignedActions } from '../lib/useRightAlignedActions';
 
@@ -27,6 +28,7 @@ type Anime = {
 const QUERY = `
   query TrendingAnime($page: Int!, $perPage: Int!, $sort: [MediaSort]) {
     Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
       media(type: ANIME, sort: $sort) {
         id
         siteUrl
@@ -44,24 +46,27 @@ async function fetchPage(
   perPage = 10,
   sort: string[] = ['TRENDING_DESC'],
   signal?: AbortSignal
-): Promise<Anime[]> {
-  const data = await fetchGraphQL<{ Page: { media: Anime[] } }>(
+): Promise<{ items: Anime[]; hasNextPage: boolean }> {
+  const data = await fetchGraphQL<{ Page: { pageInfo?: { hasNextPage?: boolean | null } | null; media: Anime[] } }>(
     QUERY,
     { page, perPage, sort },
     { signal }
   );
-  return data.Page.media ?? [];
+  const items = data.Page.media ?? [];
+  const hasNextPage = !!data.Page.pageInfo?.hasNextPage;
+  return { items, hasNextPage };
 }
 
 export default function TrendingList() {
   const PER_PAGE = 10;
   const MAX_ITEMS = 20;
 
-  const { items, error, loadingInitial: loading, loadingMore, hasMore, showMore } =
-    useIncrementalLoader<Anime>(
-      (page, perPage, signal) => fetchPage(page, perPage, ['TRENDING_DESC'], signal),
-      { perPage: PER_PAGE, maxItems: MAX_ITEMS, deps: [] }
-    );
+  const { items, error, loadingInitial: loading, loadingMore, hasMore, showMore, reset } =
+    useIncrementalLoader<Anime>((page, perPage, signal) => fetchPage(page, perPage, ['TRENDING_DESC'], signal), {
+      perPage: PER_PAGE,
+      maxItems: MAX_ITEMS,
+      deps: [],
+    });
 
   const { setGridRef, actionsRightGap } = useRightAlignedActions([
     loading,
@@ -71,7 +76,7 @@ export default function TrendingList() {
 
   const subtitle = useMemo(() => {
     if (loading) return 'Loading trending…';
-    if (error) return 'Something went wrong';
+    if (error) return toUserMessage(error);
     return `Top ${items.length} trending now`;
   }, [loading, error, items.length]);
 
@@ -83,7 +88,12 @@ export default function TrendingList() {
 
         {error && (
           <div className="top-list__error" role="alert">
-            {error}
+            {toUserMessage(error)}
+            <div className="top-list__actions" style={{ justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button type="button" className="btn-link" onClick={reset} aria-label="Retry loading trending anime">
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
