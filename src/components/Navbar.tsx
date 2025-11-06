@@ -75,6 +75,9 @@ export default function Navbar() {
               {l.label}
             </a>
           ))}
+          <a href="#signup" className="nav__signup" onClick={() => setMenuOpen(false)}>
+            Sign up
+          </a>
           <a href="#sign-in" className="nav__signin" onClick={() => setMenuOpen(false)}>
             Sign in
           </a>

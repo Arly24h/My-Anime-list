@@ -62,3 +62,4 @@ We will use AniList's GraphQL API for search, seasonal listings, trending/top, d
 	- [ ] Trending optimization: fetch only first 10 by default; on “Show more”, request the next 10 (page 2) on demand instead of preloading 20. This reduces initial payload and speeds up first view.
 - [ ] Auth (later)
 	- [ ] Evaluate AniList OAuth for user-specific lists (watchlist/progress/favorites) and mutations.
+	- [ ] App Sign up: Connect the Sign up form to a backend API (validation, duplicate checks, error states, and success redirect).
