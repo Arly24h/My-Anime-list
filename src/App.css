@@ -1,289 +1,301 @@
 .app {
-	min-height: 100vh;
-	display: flex;
-	flex-direction: column;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
 main {
-	flex: 1 0 auto;
+  flex: 1 0 auto;
 }
 .container {
-	max-width: 1100px;
-	margin: 0 auto;
-	padding: 1rem;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 1rem;
 }
 
 .top-list {
-	padding: 1rem 0 2rem;
+  padding: 1rem 0 2rem;
 }
 
 .top-list h2 {
-	margin: 0 0 0.25rem;
-	font-size: 1.5rem;
+  margin: 0 0 0.25rem;
+  font-size: 1.5rem;
 }
 
 .top-list__subtitle {
-	margin: 0 0 1rem;
-	color: #7a7a7a;
+  margin: 0 0 1rem;
+  color: #7a7a7a;
 }
 
 .top-list__error {
-	background: #ffe6e6;
-	color: #a40000;
-	padding: 0.75rem 1rem;
-	border-radius: 8px;
-	margin-bottom: 1rem;
+  background: #ffe6e6;
+  color: #a40000;
+  padding: 0.75rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1rem;
 }
 
 .top-list__grid {
-	list-style: none;
-	padding: 0;
-	margin: 0;
-	display: flex;
-	flex-wrap: wrap;
-	gap: 12px;
-	place-content: flex-start center;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  place-content: flex-start center;
 }
 
 .top-list__grid > .card {
-	flex: 0 0 180px;
-	min-width: 180px;
+  flex: 0 0 180px;
+  min-width: 180px;
 }
 
 .card {
-	background: #151515;
-	border-radius: 10px;
-	overflow: visible; 
-	border: 1px solid #242424;
-	position: relative;
+  background: #151515;
+  border-radius: 10px;
+  overflow: visible;
+  border: 1px solid #242424;
+  position: relative;
 }
 
 .card__link {
-	display: block;
-	color: inherit;
-	text-decoration: none;
+  display: block;
+  color: inherit;
+  text-decoration: none;
 }
 
 .card__media {
-	position: relative;
-	aspect-ratio: 3/4;
-	display: flex;
-	align-items: center;
-	justify-content: center;
-	overflow: hidden;
-	border-top-left-radius: 10px;
-	border-top-right-radius: 10px;
+  position: relative;
+  aspect-ratio: 3/4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-top-left-radius: 10px;
+  border-top-right-radius: 10px;
 }
 
 .card__media img {
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
 }
 
 .card__rank {
-	position: absolute;
-	top: 6px;
-	left: 6px;
-	background: rgb(0 0 0 / 70%);
-	color: #fff;
-	padding: 2px 6px;
-	border-radius: 6px;
-	font-size: 12px;
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  background: rgb(0 0 0 / 70%);
+  color: #fff;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 12px;
 }
 
 .card__body {
-	padding: 10px 12px 36px;
+  padding: 10px 12px 36px;
 }
 
 .card__title {
-	font-size: 0.95rem;
-	line-height: 1.25;
-	margin: 0 0 6px;
+  font-size: 0.95rem;
+  line-height: 1.25;
+  margin: 0 0 6px;
 }
 
 .card__meta {
-	font-size: 0.8rem;
-	color: #a0a0a0;
-	display: flex;
-	gap: 6px;
+  font-size: 0.8rem;
+  color: #a0a0a0;
+  display: flex;
+  gap: 6px;
 }
 
-.card__popover.side-right { left: calc(100% + 8px); }
+.card__popover.side-right {
+  left: calc(100% + 8px);
+}
 
-.card__popover.side-left { right: calc(100% + 8px); }
+.card__popover.side-left {
+  right: calc(100% + 8px);
+}
 
 .badge {
-	background: #223a22;
-	color: #c2ffc2;
-	padding: 2px 6px;
-	border-radius: 6px;
-	font-size: 0.75rem;
+  background: #223a22;
+  color: #c2ffc2;
+  padding: 2px 6px;
+  border-radius: 6px;
+  font-size: 0.75rem;
 }
 
 .card__score {
-	position: absolute;
-	left: 12px;
-	bottom: 10px;
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
 }
 
 .muted {
-	color: #7a7a7a;
+  color: #7a7a7a;
 }
 
 .skeleton .card {
-	background: linear-gradient(90deg, #1a1a1a 25%, #202020 37%, #1a1a1a 63%);
-	background-size: 400% 100%;
-	animation: shimmer 1.2s infinite;
-	height: 100%;
+  background: linear-gradient(90deg, #1a1a1a 25%, #202020 37%, #1a1a1a 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.2s infinite;
+  height: 100%;
 }
 
 @keyframes shimmer {
-	0% {
-		background-position: 200% 0;
-	}
-	100% {
-		background-position: -200% 0;
-	}
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }
 
 .card__popover {
-	position: absolute;
-	top: 8px;
-	width: 240px;
-	max-width: 70vw;
-	background: #0b0b0b;
-	color: #e8e8e8;
-	border: 1px solid #262626;
-	border-radius: 10px;
-	box-shadow: 0 8px 28px rgb(0 0 0 / 35%);
-	opacity: 0;
-	transform: translateY(-6px);
-	pointer-events: none;
-	transition: opacity 0.16s ease, transform 0.16s ease;
-	z-index: 3;
+  position: absolute;
+  top: 8px;
+  width: 240px;
+  max-width: 70vw;
+  background: #0b0b0b;
+  color: #e8e8e8;
+  border: 1px solid #262626;
+  border-radius: 10px;
+  box-shadow: 0 8px 28px rgb(0 0 0 / 35%);
+  opacity: 0;
+  transform: translateY(-6px);
+  pointer-events: none;
+  transition:
+    opacity 0.16s ease,
+    transform 0.16s ease;
+  z-index: 3;
 }
 
-.card__popover.side-right { left: calc(100% + 8px); }
+.card__popover.side-right {
+  left: calc(100% + 8px);
+}
 
-.card__popover.side-left { right: calc(100% + 8px); }
+.card__popover.side-left {
+  right: calc(100% + 8px);
+}
 
 .card__popover-inner {
-	padding: 10px 12px;
+  padding: 10px 12px;
 }
 
 .card:hover .card__popover,
 .card:focus-within .card__popover,
 .card__link:focus .card__popover,
 .card__link:focus-visible .card__popover {
-	opacity: 1;
-	transform: translateY(0);
+  opacity: 1;
+  transform: translateY(0);
 }
 
 .card__subtitle {
-	margin: 0 0 6px;
-	color: #e8e8e8;
-	font-size: 0.85rem;
+  margin: 0 0 6px;
+  color: #e8e8e8;
+  font-size: 0.85rem;
 }
 
 .card__hover-meta {
-	display: flex;
-	flex-wrap: wrap;
-	gap: 6px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
 }
 
 .chip {
-	background: #0e2233;
-	color: #cde8ff;
-	border: 1px solid #123049;
-	padding: 2px 6px;
-	border-radius: 999px;
-	font-size: 0.72rem;
+  background: #0e2233;
+  color: #cde8ff;
+  border: 1px solid #123049;
+  padding: 2px 6px;
+  border-radius: 999px;
+  font-size: 0.72rem;
 }
 
 .top-list__actions {
-	display: flex;
-	justify-content: flex-start;
-	margin-top: 8px;
+  display: flex;
+  justify-content: flex-start;
+  margin-top: 8px;
 }
 
 .btn-link {
-	appearance: none;
-	background: none;
-	border: none;
-	color: #7fb3ff;
-	padding: 4px 0;
-	cursor: pointer;
-	font: inherit;
+  appearance: none;
+  background: none;
+  border: none;
+  color: #7fb3ff;
+  padding: 4px 0;
+  cursor: pointer;
+  font: inherit;
 }
 
-.btn-link:hover { text-decoration: underline; }
+.btn-link:hover {
+  text-decoration: underline;
+}
 
 .trending-list .top-list__actions {
-	justify-content: flex-end;
+  justify-content: flex-end;
 }
 
 .trending-list .top-list__grid {
-	justify-content: center;
+  justify-content: center;
 }
 
 .trending-list .card__title {
-	display: -webkit-box;
-	line-clamp: 2;
-	-webkit-line-clamp: 2;
-	-webkit-box-orient: vertical;
-	overflow: hidden;
-	min-height: 2.5em;
+  display: -webkit-box;
+  line-clamp: 2;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.5em;
 }
 
 /* Responsive adjustments for smaller screens */
 @media (width <= 1200px) {
-	.top-list__grid > .card {
-		flex-basis: 160px;
-		min-width: 160px;
-	}
+  .top-list__grid > .card {
+    flex-basis: 160px;
+    min-width: 160px;
+  }
 }
 
 @media (width <= 980px) {
-	.top-list__grid > .card {
-		flex-basis: 140px;
-		min-width: 140px;
-	}
+  .top-list__grid > .card {
+    flex-basis: 140px;
+    min-width: 140px;
+  }
 }
 
 @media (width <= 820px) {
-	.top-list__grid {
-		gap: 10px;
-	}
-	.top-list__grid > .card {
-		flex-basis: 130px;
-		min-width: 130px;
-	}
+  .top-list__grid {
+    gap: 10px;
+  }
+  .top-list__grid > .card {
+    flex-basis: 130px;
+    min-width: 130px;
+  }
 }
 
 @media (width <= 640px) {
-	.top-list__grid {
-		gap: 8px;
-	}
-	.top-list__grid > .card {
-		flex-basis: 120px;
-		min-width: 120px;
-	}
-	.card__title {
-		font-size: 0.9rem;
-	}
+  .top-list__grid {
+    gap: 8px;
+  }
+  .top-list__grid > .card {
+    flex-basis: 120px;
+    min-width: 120px;
+  }
+  .card__title {
+    font-size: 0.9rem;
+  }
 }
 
 @media (width <= 480px) {
-	.top-list__grid > .card {
-		flex-basis: 110px;
-		min-width: 110px;
-	}
-	.card__title {
-		font-size: 0.85rem;
-	}
-	.badge {
-		font-size: 0.7rem;
-	}
+  .top-list__grid > .card {
+    flex-basis: 110px;
+    min-width: 110px;
+  }
+  .card__title {
+    font-size: 0.85rem;
+  }
+  .badge {
+    font-size: 0.7rem;
+  }
 }

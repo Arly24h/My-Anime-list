@@ -3,8 +3,9 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import TopAnimeList from './components/TopAnimeList';
 import TrendingList from './components/TrendingList';
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import Signup from './pages/Signup';
+import AnimePage from './pages/AnimePage';
 
 function App() {
   const [hash, setHash] = useState<string>(window.location.hash);
@@ -15,13 +16,20 @@ function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  const isSignup = hash.replace('#', '').toLowerCase() === 'signup';
+  const route = useMemo(() => hash.replace(/^#/, ''), [hash]);
+  const isSignup = route.toLowerCase() === 'signup';
+  const animeId = useMemo(() => {
+    const m = route.match(/^anime\/(\d+)/i);
+    return m ? Number(m[1]) : null;
+  }, [route]);
 
   return (
     <div className="app">
       <Navbar />
       <main>
-        {isSignup ? (
+        {animeId ? (
+          <AnimePage id={animeId} />
+        ) : isSignup ? (
           <Signup />
         ) : (
           <>

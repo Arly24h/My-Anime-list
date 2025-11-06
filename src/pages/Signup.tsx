@@ -17,9 +17,21 @@ export default function Signup() {
   const errors = useMemo(() => {
     return {
       email: email ? (validateEmail(email) ? '' : 'Enter a valid email') : 'Email is required',
-      username: username ? (username.length >= 3 ? '' : 'Must be at least 3 characters') : 'Username is required',
-      password: password ? (password.length >= 8 ? '' : 'Must be at least 8 characters') : 'Password is required',
-      confirm: confirm ? (confirm === password ? '' : 'Passwords do not match') : 'Please repeat the password',
+      username: username
+        ? username.length >= 3
+          ? ''
+          : 'Must be at least 3 characters'
+        : 'Username is required',
+      password: password
+        ? password.length >= 8
+          ? ''
+          : 'Must be at least 8 characters'
+        : 'Password is required',
+      confirm: confirm
+        ? confirm === password
+          ? ''
+          : 'Passwords do not match'
+        : 'Please repeat the password',
     } as const;
   }, [email, username, password, confirm]);
 
