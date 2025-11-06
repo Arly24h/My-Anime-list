@@ -1,5 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchGraphQL, getErrorMessage, isAbortError } from '../lib/anilist';
+import { useMemo, useRef, useState } from 'react';
+import { fetchGraphQL } from '../lib/anilist';
+import { useIncrementalLoader } from '../lib/useIncrementalLoader';
+import { useRightAlignedActions } from '../lib/useRightAlignedActions';
 
 type Title = {
   romaji?: string | null;
@@ -74,45 +76,35 @@ async function fetchPage(
 }
 
 export default function TopAnimeList() {
-  const [items, setItems] = useState<Anime[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const PER_PAGE = 10;
+  const MAX_ITEMS = 100;
+  const {
+    items,
+    error,
+    loadingInitial: loading,
+    loadingMore,
+    hasMore,
+    showMore,
+  } = useIncrementalLoader<Anime>(
+    (page, perPage, signal) => fetchPage(page, perPage, ['SCORE_DESC'], signal),
+    { perPage: PER_PAGE, maxItems: MAX_ITEMS, deps: [] }
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [page1, page2] = await Promise.all([
-          fetchPage(1, 50, ['SCORE_DESC'], controller.signal),
-          fetchPage(2, 50, ['SCORE_DESC'], controller.signal),
-        ]);
-        if (!cancelled) {
-          setItems([...page1, ...page2]);
-        }
-      } catch (error: unknown) {
-        if (isAbortError(error)) return;
-        if (!cancelled) setError(getErrorMessage(error) || 'Failed to load top anime.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, []);
+  const { setGridRef, actionsRightGap } = useRightAlignedActions([
+    loading,
+    error,
+    items.length,
+  ]);
 
   const subtitle = useMemo(() => {
     if (loading) return 'Loading top 100…';
     if (error) return 'Something went wrong';
     return `Top ${items.length} by score`;
   }, [loading, error, items.length]);
+
+  async function onShowMore() {
+    await showMore();
+  }
 
   return (
     <section className="top-list" aria-labelledby="top-anime-heading">
@@ -133,11 +125,29 @@ export default function TopAnimeList() {
             ))}
           </ul>
         ) : (
-          <ol className="top-list__grid">
-            {items.map((anime, index) => (
-              <AnimeCard key={anime.id} anime={anime} rank={index + 1} />
-            ))}
-          </ol>
+          <>
+            <ol ref={setGridRef} className="top-list__grid">
+              {items.map((anime, index) => (
+                <AnimeCard key={anime.id} anime={anime} rank={index + 1} />
+              ))}
+            </ol>
+            {hasMore && !error && (
+              <div
+                className="top-list__actions"
+                style={{ marginRight: actionsRightGap, justifyContent: 'flex-end' }}
+              >
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={onShowMore}
+                  disabled={loadingMore}
+                  aria-busy={loadingMore}
+                >
+                  {loadingMore ? 'Loading…' : 'Show more'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>

@@ -196,9 +196,11 @@ export default function AnimePage({ id }: { id: number }) {
         if (!cancelled) setLoading(false);
       }
     }
-    load();
+  const debounceMs = 75;
+    const timeoutId = window.setTimeout(load, debounceMs);
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
   }, [id]);
