@@ -1,8 +1,9 @@
-import { useMemo } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import { fetchGraphQL } from '../lib/anilist';
 import { toUserMessage } from '../lib/errorhandling';
 import { useIncrementalLoader } from '../lib/useIncrementalLoader';
 import { useRightAlignedActions } from '../lib/useRightAlignedActions';
+import AnimePopover from './AnimePopover';
 
 type Title = {
   romaji?: string | null;
@@ -23,6 +24,10 @@ type Anime = {
   averageScore?: number | null;
   trending?: number | null;
   coverImage?: CoverImage | null;
+  format?: string | null;
+  episodes?: number | null;
+  season?: string | null;
+  seasonYear?: number | null;
 };
 
 const QUERY = `
@@ -35,6 +40,10 @@ const QUERY = `
         title { romaji english native }
         averageScore
         trending
+        format
+        episodes
+        season
+        seasonYear
         coverImage { medium large color }
       }
     }
@@ -56,6 +65,8 @@ async function fetchPage(
   const hasNextPage = !!data.Page.pageInfo?.hasNextPage;
   return { items, hasNextPage };
 }
+
+const POPOVER_WIDTH = 240;
 
 export default function TrendingList() {
   const PER_PAGE = 10;
@@ -106,31 +117,9 @@ export default function TrendingList() {
         ) : (
           <>
             <ol ref={setGridRef} className="top-list__grid">
-              {items.map((anime, index) => {
-                const title =
-                  anime.title.english || anime.title.romaji || anime.title.native || 'Untitled';
-                const img = anime.coverImage?.large || anime.coverImage?.medium || '';
-                const rank = index + 1;
-                return (
-                  <li key={anime.id} className="card">
-                    <a href={`#anime/${anime.id}`} className="card__link">
-                      <div
-                        className="card__media"
-                        style={{ backgroundColor: anime.coverImage?.color || '#222' }}
-                      >
-                        {img && <img src={img} alt="" loading="lazy" />}
-                        <span className="card__rank">#{rank}</span>
-                      </div>
-                      <div className="card__body">
-                        <h3 className="card__title">{title}</h3>
-                      </div>
-                      {anime.averageScore != null && (
-                        <span className="card__score badge">Score {anime.averageScore}</span>
-                      )}
-                    </a>
-                  </li>
-                );
-              })}
+              {items.map((anime, index) => (
+                <TrendingCard key={anime.id} anime={anime} rank={index + 1} />
+              ))}
             </ol>
             {hasMore && !error && (
               <div
@@ -152,5 +141,52 @@ export default function TrendingList() {
         )}
       </div>
     </section>
+  );
+}
+
+function TrendingCard({ anime, rank }: { anime: Anime; rank: number }) {
+  const title = anime.title.english || anime.title.romaji || anime.title.native || 'Untitled';
+  const img = anime.coverImage?.large || anime.coverImage?.medium || '';
+  const [side, setSide] = useState<'right' | 'left'>('right');
+  const [active, setActive] = useState(false);
+  const cardRef = useRef<HTMLLIElement | null>(null);
+
+  function decideSide() {
+    const element = cardRef.current;
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const spaceRight = window.innerWidth - rect.right;
+    setSide(spaceRight >= POPOVER_WIDTH + 12 ? 'right' : 'left');
+  }
+
+  return (
+    <li
+      ref={cardRef}
+      className={`card pos-${side}`}
+      onMouseEnter={() => {
+        decideSide();
+        setActive(true);
+      }}
+      onMouseLeave={() => setActive(false)}
+      onFocus={() => {
+        decideSide();
+        setActive(true);
+      }}
+      onBlur={() => setActive(false)}
+    >
+      <a href={`#anime/${anime.id}`} className="card__link">
+        <div className="card__media" style={{ backgroundColor: anime.coverImage?.color || '#222' }}>
+          {img && <img src={img} alt="" loading="lazy" />}
+          <span className="card__rank">#{rank}</span>
+        </div>
+        <div className="card__body">
+          <h3 className="card__title">{title}</h3>
+        </div>
+        {anime.averageScore != null && (
+          <span className="card__score badge">Score {anime.averageScore}</span>
+        )}
+  {active && <AnimePopover side={side} anime={anime} />}
+      </a>
+    </li>
   );
 }

@@ -3,6 +3,7 @@ import { fetchGraphQL } from '../lib/anilist';
 import { toUserMessage } from '../lib/errorhandling';
 import { useIncrementalLoader } from '../lib/useIncrementalLoader';
 import { useRightAlignedActions } from '../lib/useRightAlignedActions';
+import AnimePopover from './AnimePopover';
 
 type Title = {
   romaji?: string | null;
@@ -206,27 +207,7 @@ function AnimeCard({ anime, rank }: { anime: Anime; rank: number }) {
         {anime.averageScore != null && (
           <span className="card__score badge">Score {anime.averageScore}</span>
         )}
-        {active && (
-          <div className={`card__popover side-${side}`} aria-hidden="true">
-            <div className="card__popover-inner">
-              {(anime.title.native || anime.title.romaji) && (
-                <p className="card__subtitle">{anime.title.native || anime.title.romaji}</p>
-              )}
-              <div className="card__hover-meta">
-                {anime.popularity != null && <span className="chip">Pop {anime.popularity}</span>}
-                {anime.format && <span className="chip">{anime.format}</span>}
-                {anime.episodes != null && <span className="chip">{anime.episodes} eps</span>}
-                {(anime.season || anime.seasonYear) && (
-                  <span className="chip">
-                    {anime.season ? anime.season : ''}
-                    {anime.season && anime.seasonYear ? ' ' : ''}
-                    {anime.seasonYear ? anime.seasonYear : ''}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        {active && <AnimePopover side={side} anime={anime} />}
       </a>
     </li>
   );
