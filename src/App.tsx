@@ -19,8 +19,8 @@ function App() {
   const route = useMemo(() => hash.replace(/^#/, ''), [hash]);
   const isSignup = route.toLowerCase() === 'signup';
   const animeId = useMemo(() => {
-    const m = route.match(/^anime\/(\d+)/i);
-    return m ? Number(m[1]) : null;
+    const match = route.match(/^anime\/(\d+)/i);
+    return match ? Number(match[1]) : null;
   }, [route]);
 
   return (

@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchGraphQL, getErrorMessage, isAbortError } from '../lib/anilist';
+import { useMemo, useRef, useState } from 'react';
+import { fetchGraphQL } from '../lib/anilist';
+import { toUserMessage } from '../lib/errorhandling';
+import { useIncrementalLoader } from '../lib/useIncrementalLoader';
+import { useRightAlignedActions } from '../lib/useRightAlignedActions';
+import AnimePopover from './AnimePopover';
 
 type Title = {
   romaji?: string | null;
@@ -64,55 +68,48 @@ async function fetchPage(
   perPage = 50,
   sort: string[] = ['SCORE_DESC'],
   signal?: AbortSignal
-): Promise<Anime[]> {
+): Promise<{ items: Anime[]; hasNextPage: boolean }> {
   const data = await fetchGraphQL<{ Page: AniListPage }>(
     QUERY,
     { page, perPage, sort },
     { signal }
   );
-  return data.Page.media ?? [];
+  const items = data.Page.media ?? [];
+  const hasNextPage = !!data.Page.pageInfo?.hasNextPage;
+  return { items, hasNextPage };
 }
 
 export default function TopAnimeList() {
-  const [items, setItems] = useState<Anime[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const PER_PAGE = 10;
+  const MAX_ITEMS = 100;
+  const {
+    items,
+    error,
+    loadingInitial: loading,
+    loadingMore,
+    hasMore,
+    showMore,
+    reset,
+  } = useIncrementalLoader<Anime>(
+    (page, perPage, signal) => fetchPage(page, perPage, ['SCORE_DESC'], signal),
+    { perPage: PER_PAGE, maxItems: MAX_ITEMS, deps: [] }
+  );
 
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const [p1, p2] = await Promise.all([
-          fetchPage(1, 50, ['SCORE_DESC'], controller.signal),
-          fetchPage(2, 50, ['SCORE_DESC'], controller.signal),
-        ]);
-        if (!cancelled) {
-          setItems([...p1, ...p2]);
-        }
-      } catch (e: unknown) {
-        if (isAbortError(e)) return;
-        if (!cancelled) setError(getErrorMessage(e) || 'Failed to load top anime.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, []);
+  const { setGridRef, actionsRightGap } = useRightAlignedActions([
+    loading,
+    error,
+    items.length,
+  ]);
 
   const subtitle = useMemo(() => {
     if (loading) return 'Loading top 100…';
-    if (error) return 'Something went wrong';
+    if (error) return toUserMessage(error);
     return `Top ${items.length} by score`;
   }, [loading, error, items.length]);
+
+  async function onShowMore() {
+    await showMore();
+  }
 
   return (
     <section className="top-list" aria-labelledby="top-anime-heading">
@@ -122,22 +119,45 @@ export default function TopAnimeList() {
 
         {error && (
           <div className="top-list__error" role="alert">
-            {error}
+            {toUserMessage(error)}
+            <div className="top-list__actions" style={{ justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button type="button" className="btn-link" onClick={reset} aria-label="Retry loading top anime">
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
         {loading ? (
           <ul className="top-list__grid skeleton">
-            {Array.from({ length: 12 }).map((_, i) => (
-              <li key={i} className="card" />
+            {Array.from({ length: 12 }).map((_, index) => (
+              <li key={index} className="card" />
             ))}
           </ul>
         ) : (
-          <ol className="top-list__grid">
-            {items.map((a, idx) => (
-              <AnimeCard key={a.id} anime={a} rank={idx + 1} />
-            ))}
-          </ol>
+          <>
+            <ol ref={setGridRef} className="top-list__grid">
+              {items.map((anime, index) => (
+                <AnimeCard key={anime.id} anime={anime} rank={index + 1} />
+              ))}
+            </ol>
+            {hasMore && !error && (
+              <div
+                className="top-list__actions"
+                style={{ marginRight: actionsRightGap, justifyContent: 'flex-end' }}
+              >
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={onShowMore}
+                  disabled={loadingMore}
+                  aria-busy={loadingMore}
+                >
+                  {loadingMore ? 'Loading…' : 'Show more'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
@@ -146,17 +166,17 @@ export default function TopAnimeList() {
 
 const POPOVER_WIDTH = 240;
 
-function AnimeCard({ anime: a, rank }: { anime: Anime; rank: number }) {
-  const title = a.title.english || a.title.romaji || a.title.native || 'Untitled';
-  const img = a.coverImage?.large || a.coverImage?.medium || '';
+function AnimeCard({ anime, rank }: { anime: Anime; rank: number }) {
+  const title = anime.title.english || anime.title.romaji || anime.title.native || 'Untitled';
+  const img = anime.coverImage?.large || anime.coverImage?.medium || '';
   const [side, setSide] = useState<'right' | 'left'>('right');
   const [active, setActive] = useState(false);
   const cardRef = useRef<HTMLLIElement | null>(null);
 
   function decideSide() {
-    const el = cardRef.current;
-    if (!el) return;
-    const rect = el.getBoundingClientRect();
+    const element = cardRef.current;
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
     const spaceRight = window.innerWidth - rect.right;
     setSide(spaceRight >= POPOVER_WIDTH + 12 ? 'right' : 'left');
   }
@@ -176,38 +196,18 @@ function AnimeCard({ anime: a, rank }: { anime: Anime; rank: number }) {
       }}
       onBlur={() => setActive(false)}
     >
-      <a href={`#anime/${a.id}`} className="card__link">
-        <div className="card__media" style={{ backgroundColor: a.coverImage?.color || '#222' }}>
+      <a href={`#anime/${anime.id}`} className="card__link">
+        <div className="card__media" style={{ backgroundColor: anime.coverImage?.color || '#222' }}>
           {img && <img src={img} alt="" loading="lazy" />}
           <span className="card__rank">#{rank}</span>
         </div>
         <div className="card__body">
           <h3 className="card__title">{title}</h3>
         </div>
-        {a.averageScore != null && (
-          <span className="card__score badge">Score {a.averageScore}</span>
+        {anime.averageScore != null && (
+          <span className="card__score badge">Score {anime.averageScore}</span>
         )}
-        {active && (
-          <div className={`card__popover side-${side}`} aria-hidden="true">
-            <div className="card__popover-inner">
-              {(a.title.native || a.title.romaji) && (
-                <p className="card__subtitle">{a.title.native || a.title.romaji}</p>
-              )}
-              <div className="card__hover-meta">
-                {a.popularity != null && <span className="chip">Pop {a.popularity}</span>}
-                {a.format && <span className="chip">{a.format}</span>}
-                {a.episodes != null && <span className="chip">{a.episodes} eps</span>}
-                {(a.season || a.seasonYear) && (
-                  <span className="chip">
-                    {a.season ? a.season : ''}
-                    {a.season && a.seasonYear ? ' ' : ''}
-                    {a.seasonYear ? a.seasonYear : ''}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
+        {active && <AnimePopover side={side} anime={anime} />}
       </a>
     </li>
   );

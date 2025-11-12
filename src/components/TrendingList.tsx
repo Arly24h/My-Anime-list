@@ -1,5 +1,9 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { fetchGraphQL, getErrorMessage, isAbortError } from '../lib/anilist';
+import { useMemo, useRef, useState } from 'react';
+import { fetchGraphQL } from '../lib/anilist';
+import { toUserMessage } from '../lib/errorhandling';
+import { useIncrementalLoader } from '../lib/useIncrementalLoader';
+import { useRightAlignedActions } from '../lib/useRightAlignedActions';
+import AnimePopover from './AnimePopover';
 
 type Title = {
   romaji?: string | null;
@@ -20,97 +24,70 @@ type Anime = {
   averageScore?: number | null;
   trending?: number | null;
   coverImage?: CoverImage | null;
+  format?: string | null;
+  episodes?: number | null;
+  season?: string | null;
+  seasonYear?: number | null;
 };
 
 const QUERY = `
-  query TrendingAnime($perPage: Int!, $sort: [MediaSort]) {
-    Page(page: 1, perPage: $perPage) {
+  query TrendingAnime($page: Int!, $perPage: Int!, $sort: [MediaSort]) {
+    Page(page: $page, perPage: $perPage) {
+      pageInfo { hasNextPage }
       media(type: ANIME, sort: $sort) {
         id
         siteUrl
         title { romaji english native }
         averageScore
         trending
+        format
+        episodes
+        season
+        seasonYear
         coverImage { medium large color }
       }
     }
   }
 `;
 
+async function fetchPage(
+  page: number,
+  perPage = 10,
+  sort: string[] = ['TRENDING_DESC'],
+  signal?: AbortSignal
+): Promise<{ items: Anime[]; hasNextPage: boolean }> {
+  const data = await fetchGraphQL<{ Page: { pageInfo?: { hasNextPage?: boolean | null } | null; media: Anime[] } }>(
+    QUERY,
+    { page, perPage, sort },
+    { signal }
+  );
+  const items = data.Page.media ?? [];
+  const hasNextPage = !!data.Page.pageInfo?.hasNextPage;
+  return { items, hasNextPage };
+}
+
+const POPOVER_WIDTH = 240;
+
 export default function TrendingList() {
-  const [items, setItems] = useState<Anime[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const PER_PAGE = 10;
+  const MAX_ITEMS = 20;
 
-  const [expanded, setExpanded] = useState(false);
-  const gridRef = useRef<HTMLElement | null>(null);
-  const setGridRef = (el: HTMLOListElement | HTMLUListElement | null) => {
-    gridRef.current = el as unknown as HTMLElement | null;
-  };
-  const [actionsRightGap, setActionsRightGap] = useState(0);
+  const { items, error, loadingInitial: loading, loadingMore, hasMore, showMore, reset } =
+    useIncrementalLoader<Anime>((page, perPage, signal) => fetchPage(page, perPage, ['TRENDING_DESC'], signal), {
+      perPage: PER_PAGE,
+      maxItems: MAX_ITEMS,
+      deps: [],
+    });
 
-  useEffect(() => {
-    let cancelled = false;
-    const controller = new AbortController();
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const data = await fetchGraphQL<{ Page: { media: Anime[] } }>(
-          QUERY,
-          {
-            perPage: 20,
-            sort: ['TRENDING_DESC'],
-          },
-          { signal: controller.signal }
-        );
-        if (!cancelled) setItems(data.Page.media ?? []);
-      } catch (e: unknown) {
-        if (isAbortError(e)) return;
-        if (!cancelled) setError(getErrorMessage(e) || 'Failed to load trending anime.');
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    }
-    load();
-    return () => {
-      cancelled = true;
-      controller.abort();
-    };
-  }, []);
-
-  useEffect(() => {
-    if (loading || error) return;
-    const el = gridRef.current;
-    if (!el) return;
-
-    const measure = () => {
-      const children = Array.from(el.children).filter((n) =>
-        n.classList.contains('card')
-      ) as HTMLElement[];
-      if (!children.length) return;
-      const limit = expanded ? 20 : 10;
-      const visibleCount = Math.min(children.length, limit);
-      const visible = children.slice(0, visibleCount);
-      const gridRect = el.getBoundingClientRect();
-      let maxRight = 0;
-      for (const c of visible) {
-        const r = c.getBoundingClientRect();
-        if (r.right > maxRight) maxRight = r.right;
-      }
-      const leftover = Math.max(0, Math.round(gridRect.right - maxRight));
-      setActionsRightGap(leftover);
-    };
-
-    measure();
-    const onResize = () => measure();
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
-  }, [loading, error, expanded, items.length]);
+  const { setGridRef, actionsRightGap } = useRightAlignedActions([
+    loading,
+    error,
+    items.length,
+  ]);
 
   const subtitle = useMemo(() => {
     if (loading) return 'Loading trending…';
-    if (error) return 'Something went wrong';
+    if (error) return toUserMessage(error);
     return `Top ${items.length} trending now`;
   }, [loading, error, items.length]);
 
@@ -122,61 +99,94 @@ export default function TrendingList() {
 
         {error && (
           <div className="top-list__error" role="alert">
-            {error}
+            {toUserMessage(error)}
+            <div className="top-list__actions" style={{ justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button type="button" className="btn-link" onClick={reset} aria-label="Retry loading trending anime">
+                Retry
+              </button>
+            </div>
           </div>
         )}
 
         {loading ? (
-          <ul ref={setGridRef} className="top-list__grid skeleton">
-            {Array.from({ length: 20 }).map((_, i) => (
-              <li key={i} className="card" />
+          <ul className="top-list__grid skeleton">
+            {Array.from({ length: 20 }).map((_, index) => (
+              <li key={index} className="card" />
             ))}
           </ul>
         ) : (
-          <ol ref={setGridRef} className="top-list__grid">
-            {(expanded
-              ? items.slice(0, Math.min(20, items.length))
-              : items.slice(0, Math.min(10, items.length))
-            ).map((a, idx) => {
-              const title = a.title.english || a.title.romaji || a.title.native || 'Untitled';
-              const img = a.coverImage?.large || a.coverImage?.medium || '';
-              const rank = idx + 1;
-              return (
-                <li key={a.id} className="card">
-                  <a href={`#anime/${a.id}`} className="card__link">
-                    <div
-                      className="card__media"
-                      style={{ backgroundColor: a.coverImage?.color || '#222' }}
-                    >
-                      {img && <img src={img} alt="" loading="lazy" />}
-                      <span className="card__rank">#{rank}</span>
-                    </div>
-                    <div className="card__body">
-                      <h3 className="card__title">{title}</h3>
-                    </div>
-                    {a.averageScore != null && (
-                      <span className="card__score badge">Score {a.averageScore}</span>
-                    )}
-                  </a>
-                </li>
-              );
-            })}
-          </ol>
-        )}
-
-        {!loading && !error && items.length > 10 && (
-          <div className="top-list__actions" style={{ marginRight: actionsRightGap }}>
-            <button
-              type="button"
-              className="btn-link"
-              aria-expanded={expanded}
-              onClick={() => setExpanded((v) => !v)}
-            >
-              {expanded ? 'Show less' : 'Show more'}
-            </button>
-          </div>
+          <>
+            <ol ref={setGridRef} className="top-list__grid">
+              {items.map((anime, index) => (
+                <TrendingCard key={anime.id} anime={anime} rank={index + 1} />
+              ))}
+            </ol>
+            {hasMore && !error && (
+              <div
+                className="top-list__actions"
+                style={{ marginRight: actionsRightGap, justifyContent: 'flex-end' }}
+              >
+                <button
+                  type="button"
+                  className="btn-link"
+                  onClick={showMore}
+                  disabled={loadingMore}
+                  aria-busy={loadingMore}
+                >
+                  {loadingMore ? 'Loading…' : 'Show more'}
+                </button>
+              </div>
+            )}
+          </>
         )}
       </div>
     </section>
+  );
+}
+
+function TrendingCard({ anime, rank }: { anime: Anime; rank: number }) {
+  const title = anime.title.english || anime.title.romaji || anime.title.native || 'Untitled';
+  const img = anime.coverImage?.large || anime.coverImage?.medium || '';
+  const [side, setSide] = useState<'right' | 'left'>('right');
+  const [active, setActive] = useState(false);
+  const cardRef = useRef<HTMLLIElement | null>(null);
+
+  function decideSide() {
+    const element = cardRef.current;
+    if (!element) return;
+    const rect = element.getBoundingClientRect();
+    const spaceRight = window.innerWidth - rect.right;
+    setSide(spaceRight >= POPOVER_WIDTH + 12 ? 'right' : 'left');
+  }
+
+  return (
+    <li
+      ref={cardRef}
+      className={`card pos-${side}`}
+      onMouseEnter={() => {
+        decideSide();
+        setActive(true);
+      }}
+      onMouseLeave={() => setActive(false)}
+      onFocus={() => {
+        decideSide();
+        setActive(true);
+      }}
+      onBlur={() => setActive(false)}
+    >
+      <a href={`#anime/${anime.id}`} className="card__link">
+        <div className="card__media" style={{ backgroundColor: anime.coverImage?.color || '#222' }}>
+          {img && <img src={img} alt="" loading="lazy" />}
+          <span className="card__rank">#{rank}</span>
+        </div>
+        <div className="card__body">
+          <h3 className="card__title">{title}</h3>
+        </div>
+        {anime.averageScore != null && (
+          <span className="card__score badge">Score {anime.averageScore}</span>
+        )}
+  {active && <AnimePopover side={side} anime={anime} />}
+      </a>
+    </li>
   );
 }

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { fetchGraphQL, getErrorMessage, isAbortError } from '../lib/anilist';
+import { fetchGraphQL } from '../lib/anilist';
+import { isAbortError, toUserMessage } from '../lib/errorhandling';
 import './AnimePage.css';
  
 
@@ -10,10 +11,10 @@ export type MediaTitle = {
   userPreferred?: string | null;
 };
 
-export type FuzzyDate = { 
-    year?: number | null; 
-    month?: number | null; 
-    day?: number | null 
+export type FuzzyDate = {
+  year?: number | null;
+  month?: number | null;
+  day?: number | null;
 };
 
 export type Image = {
@@ -23,15 +24,15 @@ export type Image = {
   color?: string | null;
 };
 
-export type StudioNode = { 
-    id: number; 
-    name: string; 
-    siteUrl?: string | null 
+export type StudioNode = {
+  id: number;
+  name: string;
+  siteUrl?: string | null;
 };
 
-export type StudioConnection = { 
-    edges: { isMain?: boolean | null }[]; 
-    nodes: StudioNode[] 
+export type StudioConnection = {
+  edges: { isMain?: boolean | null }[];
+  nodes: StudioNode[];
 };
 
 export type CharacterNode = {
@@ -157,13 +158,13 @@ async function fetchMedia(id: number, signal?: AbortSignal): Promise<Media> {
   return data.Media;
 }
 
-function dateToString(d?: FuzzyDate | null) {
-  if (!d?.year) return '';
-  const m = d.month ? String(d.month).padStart(2, '0') : '';
-  const day = d.day ? String(d.day).padStart(2, '0') : '';
-  if (m && day) return `${d.year}-${m}-${day}`;
-  if (m) return `${d.year}-${m}`;
-  return String(d.year);
+function dateToString(date?: FuzzyDate | null) {
+  if (!date?.year) return '';
+  const monthStr = date.month ? String(date.month).padStart(2, '0') : '';
+  const dayStr = date.day ? String(date.day).padStart(2, '0') : '';
+  if (monthStr && dayStr) return `${date.year}-${monthStr}-${dayStr}`;
+  if (monthStr) return `${date.year}-${monthStr}`;
+  return String(date.year);
 }
 
 function sanitizeDescription(text?: string | null) {
@@ -178,6 +179,7 @@ export default function AnimePage({ id }: { id: number }) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showAllStreaming, setShowAllStreaming] = useState(false);
+  const [reloadTick, setReloadTick] = useState(0);
   
 
   useEffect(() => {
@@ -187,21 +189,23 @@ export default function AnimePage({ id }: { id: number }) {
       setLoading(true);
       setError(null);
       try {
-        const m = await fetchMedia(id, controller.signal);
-        if (!cancelled) setData(m);
-      } catch (e: unknown) {
-        if (isAbortError(e)) return;
-        if (!cancelled) setError(getErrorMessage(e) || 'Failed to load anime');
+        const media = await fetchMedia(id, controller.signal);
+        if (!cancelled) setData(media);
+      } catch (error: unknown) {
+        if (isAbortError(error)) return;
+        if (!cancelled) setError(toUserMessage(error));
       } finally {
         if (!cancelled) setLoading(false);
       }
     }
-    load();
+  const debounceMs = 75;
+    const timeoutId = window.setTimeout(load, debounceMs);
     return () => {
       cancelled = true;
+      window.clearTimeout(timeoutId);
       controller.abort();
     };
-  }, [id]);
+  }, [id, reloadTick]);
 
   const title = useMemo(() => {
     if (!data) return '';
@@ -224,7 +228,17 @@ export default function AnimePage({ id }: { id: number }) {
       <section className="anime-page">
         <div className="container">
           <div className="top-list__error" role="alert">
-            {error}
+            {toUserMessage(error)}
+            <div className="top-list__actions" style={{ justifyContent: 'flex-end', marginTop: '0.5rem' }}>
+              <button
+                type="button"
+                className="btn-link"
+                onClick={() => setReloadTick((t) => t + 1)}
+                aria-label="Retry loading anime"
+              >
+                Retry
+              </button>
+            </div>
           </div>
         </div>
       </section>
@@ -303,9 +317,9 @@ export default function AnimePage({ id }: { id: number }) {
             <div className="section">
               <h3>Genres</h3>
               <div className="chip-list">
-                {data.genres.map((g) => (
-                  <span key={g} className="chip">
-                    {g}
+                {data.genres.map((genre) => (
+                  <span key={genre} className="chip">
+                    {genre}
                   </span>
                 ))}
               </div>
@@ -316,16 +330,16 @@ export default function AnimePage({ id }: { id: number }) {
             <div className="section">
               <h3>Tags</h3>
               <div className="chip-list">
-                {data.tags.map((t) => (
+                {data.tags.map((tag) => (
                   <span
-                    key={t.name}
+                    key={tag.name}
                     className="chip"
                     title={
-                      t.isGeneralSpoiler || t.isMediaSpoiler ? 'May contain spoilers' : undefined
+                      tag.isGeneralSpoiler || tag.isMediaSpoiler ? 'May contain spoilers' : undefined
                     }
                   >
-                    {t.name}
-                    {typeof t.rank === 'number' ? ` (${t.rank})` : ''}
+                    {tag.name}
+                    {typeof tag.rank === 'number' ? ` (${tag.rank})` : ''}
                   </span>
                 ))}
               </div>
@@ -336,22 +350,22 @@ export default function AnimePage({ id }: { id: number }) {
             <div className="section">
               <h3>Related</h3>
               <ul className="card-row">
-                {data.relations.nodes.map((r) => (
-                  <li key={r.id} className="card">
-                    <a className="card__link" href={`#anime/${r.id}`}>
+                {data.relations.nodes.map((relation) => (
+                  <li key={relation.id} className="card">
+                    <a className="card__link" href={`#anime/${relation.id}`}>
                       <div
                         className="card__media"
-                        style={{ backgroundColor: r.coverImage?.color || '#222' }}
+                        style={{ backgroundColor: relation.coverImage?.color || '#222' }}
                       >
-                        {r.coverImage?.large || r.coverImage?.medium ? (
-                          <img src={r.coverImage.large || r.coverImage.medium!} alt="" />
+                        {relation.coverImage?.large || relation.coverImage?.medium ? (
+                          <img src={relation.coverImage.large || relation.coverImage.medium!} alt="" />
                         ) : null}
                       </div>
                       <div className="card__body">
                         <div className="card__title">
-                          {r.title.english || r.title.romaji || r.title.native}
+                          {relation.title.english || relation.title.romaji || relation.title.native}
                         </div>
-                        {r.format && <div className="card__meta">{r.format}</div>}
+                        {relation.format && <div className="card__meta">{relation.format}</div>}
                       </div>
                     </a>
                   </li>
@@ -386,14 +400,14 @@ export default function AnimePage({ id }: { id: number }) {
             <div className="section compact">
               <h3>Studios</h3>
               <ul className="list">
-                {data.studios.nodes.map((s) => (
-                  <li key={s.id}>
-                    {s.siteUrl ? (
-                      <a href={s.siteUrl} target="_blank" rel="noreferrer">
-                        {s.name}
+                {data.studios.nodes.map((studio) => (
+                  <li key={studio.id}>
+                    {studio.siteUrl ? (
+                      <a href={studio.siteUrl} target="_blank" rel="noreferrer">
+                        {studio.name}
                       </a>
                     ) : (
-                      s.name
+                      studio.name
                     )}
                   </li>
                 ))}
@@ -405,14 +419,14 @@ export default function AnimePage({ id }: { id: number }) {
             <div className="section compact">
               <h3>Characters</h3>
               <ul className="avatar-list">
-                {data.characters.nodes.map((c) => (
-                  <li key={c.id} className="avatar-item">
-                    <a href={c.siteUrl || '#'} target="_blank" rel="noreferrer" className="avatar">
-                      {c.image?.large || c.image?.medium ? (
-                        <img src={c.image.large || c.image.medium!} alt="" />
+                {data.characters.nodes.map((character) => (
+                  <li key={character.id} className="avatar-item">
+                    <a href={character.siteUrl || '#'} target="_blank" rel="noreferrer" className="avatar">
+                      {character.image?.large || character.image?.medium ? (
+                        <img src={character.image.large || character.image.medium!} alt="" />
                       ) : null}
                     </a>
-                    <div className="avatar-name">{c.name.full || c.name.native}</div>
+                    <div className="avatar-name">{character.name.full || character.name.native}</div>
                   </li>
                 ))}
               </ul>
@@ -423,10 +437,10 @@ export default function AnimePage({ id }: { id: number }) {
             <div className="section compact">
               <h3>Rankings</h3>
               <ul className="list">
-                {data.rankings.map((r, i) => (
+                {data.rankings.map((ranking, index) => (
                   <li
-                    key={i}
-                  >{`#${r.rank} ${r.type}${r.allTime ? ' (all time)' : ''}${r.year ? ` ${r.year}` : ''}${r.season ? ` ${r.season}` : ''}${r.context ? ` — ${r.context}` : ''}`}</li>
+                    key={index}
+                  >{`#${ranking.rank} ${ranking.type}${ranking.allTime ? ' (all time)' : ''}${ranking.year ? ` ${ranking.year}` : ''}${ranking.season ? ` ${ranking.season}` : ''}${ranking.context ? ` — ${ranking.context}` : ''}`}</li>
                 ))}
               </ul>
             </div>
@@ -459,14 +473,14 @@ export default function AnimePage({ id }: { id: number }) {
                 {(showAllStreaming
                   ? data.streamingEpisodes
                   : data.streamingEpisodes.slice(0, 5)
-                ).map((se, i) => (
-                  <li key={i}>
-                    {se.url ? (
-                      <a href={se.url} target="_blank" rel="noreferrer">
-                        {se.title || se.site || 'Episode'}
+                ).map((episode, index) => (
+                  <li key={index}>
+                    {episode.url ? (
+                      <a href={episode.url} target="_blank" rel="noreferrer">
+                        {episode.title || episode.site || 'Episode'}
                       </a>
                     ) : (
-                      se.title || se.site || ''
+                      episode.title || episode.site || ''
                     )}
                   </li>
                 ))}
@@ -477,7 +491,7 @@ export default function AnimePage({ id }: { id: number }) {
                     type="button"
                     className="btn-link"
                     aria-expanded={showAllStreaming}
-                    onClick={() => setShowAllStreaming((v) => !v)}
+                    onClick={() => setShowAllStreaming((show) => !show)}
                   >
                     {showAllStreaming ? 'Show less' : 'Show more'}
                   </button>

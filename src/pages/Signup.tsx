@@ -35,10 +35,10 @@ export default function Signup() {
     } as const;
   }, [email, username, password, confirm]);
 
-  const isValid = Object.values(errors).every((e) => e === '');
+  const isValid = Object.values(errors).every((errorText) => errorText === '');
 
-  function onSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  function onSubmit(event: React.FormEvent) {
+    event.preventDefault();
     setTouched({ email: true, username: true, password: true, confirm: true });
     if (!isValid) return;
     // No backend yet — placeholder action
@@ -68,8 +68,8 @@ export default function Signup() {
               inputMode="email"
               autoComplete="email"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+              onChange={(event) => setEmail(event.target.value)}
+              onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
               aria-invalid={touched.email && !!errors.email}
               aria-describedby="email-error"
               required
@@ -88,8 +88,8 @@ export default function Signup() {
               type="text"
               autoComplete="username"
               value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, username: true }))}
+              onChange={(event) => setUsername(event.target.value)}
+              onBlur={() => setTouched((prev) => ({ ...prev, username: true }))}
               aria-invalid={touched.username && !!errors.username}
               aria-describedby="username-error"
               required
@@ -109,8 +109,8 @@ export default function Signup() {
               type="password"
               autoComplete="new-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+              onChange={(event) => setPassword(event.target.value)}
+              onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
               aria-invalid={touched.password && !!errors.password}
               aria-describedby="password-error"
               required
@@ -130,8 +130,8 @@ export default function Signup() {
               type="password"
               autoComplete="new-password"
               value={confirm}
-              onChange={(e) => setConfirm(e.target.value)}
-              onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
+              onChange={(event) => setConfirm(event.target.value)}
+              onBlur={() => setTouched((prev) => ({ ...prev, confirm: true }))}
               aria-invalid={touched.confirm && !!errors.confirm}
               aria-describedby="confirm-error"
               required
